@@ -1,0 +1,39 @@
+name: HH Uzbekistan -> Telegram
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # har 10 daqiqa
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests
+
+      - name: Run
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
+          HH_HOST: "hh.uz"
+        run: python hh_to_telegram.py
+
+      - name: Commit state
+        run: |
+          if [ -f state.json ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git diff --cached --quiet || git commit -m "Update state"
+            git push
+          fi
