@@ -2,7 +2,8 @@ import os, json
 import requests
 
 HH_BASE = "https://api.hh.ru"
-UA = os.environ.get("HH_USER_AGENT", "UzJobsBot/1.0 (your_email@example.com)")
+UA = (os.environ.get("HH_USER_AGENT", "UzJobsBot/1.0 (your_email@example.com)") or "")
+UA = UA.strip().replace("\r", " ").replace("\n", " ")
 TG_TOKEN = os.environ["TG_BOT_TOKEN"]
 TG_CHAT_ID = os.environ["TG_CHAT_ID"]  # public kanal bo‘lsa: @kanal_username
 HOST = os.environ.get("HH_HOST", "hh.uz")
