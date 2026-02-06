@@ -31,15 +31,14 @@ jobs:
 
       - name: Run
         env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-          HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
-          HH_HOST: "hh.uz"
-          MAX_POSTS: "10"
-          SLEEP_BETWEEN_POSTS: "2"
-          # Tarjima ishlatsangiz:
-          LT_URL: ${{ secrets.LT_URL }}
-          #LT_API_KEY: ${{ secrets.LT_API_KEY }}
+            TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+            TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+            HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
+            HH_HOST: "hh.uz"
+            MAX_POSTS: "10"
+            SLEEP_BETWEEN_POSTS: "2"
+            LT_URL: ${{ secrets.LT_URL }}
+            LT_API_KEY: ${{ secrets.LT_API_KEY }}
         run: python hh_to_telegram.py
 
       - name: Save state cache
