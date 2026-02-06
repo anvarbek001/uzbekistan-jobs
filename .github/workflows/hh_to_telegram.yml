@@ -9,10 +9,6 @@ concurrency:
   group: hh-uz-telegram
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
-
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -25,6 +21,14 @@ jobs:
 
       - run: pip install requests
 
+      - name: Restore state cache
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: hh-state-${{ github.ref_name }}
+          restore-keys: |
+            hh-state-
+
       - name: Run
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
@@ -33,22 +37,16 @@ jobs:
           HH_HOST: "hh.uz"
           MAX_POSTS: "10"
           SLEEP_BETWEEN_POSTS: "2"
+          # Tarjima ishlatsangiz:
+          LT_URL: ${{ secrets.LT_URL }}
+          LT_API_KEY: ${{ secrets.LT_API_KEY }}
         run: python hh_to_telegram.py
 
-      - name: Commit state
-        run: |
-          if [ -f state.json ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-
-            git add state.json
-            git diff --cached --quiet && exit 0
-
-            git commit -m "Update state"
-
-            # Remote dagi yangiliklarni olib, ustiga qo'yib push qiladi
-            git pull --rebase origin main
-
-            # Push (agar yana urilsa, 2 marta urinib ko'radi)
-            git push origin main || (sleep 3 && git pull --rebase origin main && git push origin main)
-          fi
+      - name: Save state cache
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: hh-state-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            hh-state-${{ github.ref_name }}
+            hh-state-
