@@ -26,6 +26,7 @@ jobs:
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
           HH_HOST: "hh.uz"
+          MAX_POSTS: "10"
         run: python hh_to_telegram.py
 
       - name: Commit state
