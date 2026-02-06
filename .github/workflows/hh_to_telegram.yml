@@ -39,7 +39,7 @@ jobs:
           SLEEP_BETWEEN_POSTS: "2"
           # Tarjima ishlatsangiz:
           LT_URL: ${{ secrets.LT_URL }}
-          LT_API_KEY: ${{ secrets.LT_API_KEY }}
+          #LT_API_KEY: ${{ secrets.LT_API_KEY }}
         run: python hh_to_telegram.py
 
       - name: Save state cache
