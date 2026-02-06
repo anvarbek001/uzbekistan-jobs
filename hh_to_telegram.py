@@ -124,14 +124,31 @@ def main():
 
         loc = best_location(it)
 
-        lines = [
-            f"💼 Vakansiya: {title}",
-            f"🏢 Kompaniya: {employer}" if employer else None,
-            f"📍 Manzil: {loc}" if loc else None,
-            f"💰 Maosh: {sal_txt}" if sal_txt else None,
-            f"🔗 Batafsil: {url}" if url else None,
-            "#uzjobs #hh",
-        ]
+       experience = ""
+if it.get("experience"):
+    experience = it["experience"].get("name", "")
+
+schedule = ""
+if it.get("schedule"):
+    schedule = it["schedule"].get("name", "")
+
+languages = ""
+if it.get("key_skills"):
+    skills = [s.get("name") for s in it["key_skills"] if s.get("name")]
+    technologies = ", ".join(skills)
+else:
+    technologies = ""
+
+lines = [
+    f"🏢 Kompaniya: {employer} ({(it.get('employer') or {}).get('alternate_url','')})" if employer else None,
+    f"💵 Maosh: {sal_txt}" if sal_txt else None,
+    f"💼 Tajriba: {experience}" if experience else None,
+    f"🛠 Texnologiya: {technologies}" if technologies else None,
+    f"🌐 Format: {schedule}" if schedule else None,
+    f"🇺🇿 Til: #ru",
+    f"🔗 {url}" if url else None,
+]
+
         tg_send("\n".join([l for l in lines if l]))
 
     if items:
