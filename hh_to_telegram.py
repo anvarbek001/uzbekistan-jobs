@@ -125,11 +125,11 @@ def main():
         loc = best_location(it)
 
         lines = [
-            f"💼 {title}",
-            f"🏢 {employer}" if employer else None,
-            f"📍 {loc}" if loc else None,
-            f"💰 {sal_txt}" if sal_txt else None,
-            f"🔗 {url}" if url else None,
+            f"💼 Vakansiya: {title}",
+            f"🏢 Kompaniya: {employer}" if employer else None,
+            f"📍 Manzil: {loc}" if loc else None,
+            f"💰 Maosh: {sal_txt}" if sal_txt else None,
+            f"🔗 Batafsil: {url}" if url else None,
             "#uzjobs #hh",
         ]
         tg_send("\n".join([l for l in lines if l]))
