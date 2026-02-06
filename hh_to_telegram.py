@@ -237,10 +237,17 @@ def main():
             company_line = f"{employer} ({employer_domain})"
 
         sal = salary_text(it)
-        experience = (it.get("experience") or {}).get("name", "")
-        schedule = (it.get("schedule") or {}).get("name", "")
-        employment = (it.get("employment") or {}).get("name", "")
+       experience_raw = (it.get("experience") or {}).get("name", "")
+        schedule_raw = (it.get("schedule") or {}).get("name", "")
+        employment_raw = (it.get("employment") or {}).get("name", "")
+        
+        # bular odatda ruscha keladi → tarjima qilamiz
+        experience = smart_translate(experience_raw, state) if experience_raw else ""
+        schedule = smart_translate(schedule_raw, state) if schedule_raw else ""
+        employment = smart_translate(employment_raw, state) if employment_raw else ""
+        
         work_type = " | ".join([p for p in [schedule, employment] if p])
+
 
         loc = best_location(it)
         lang = guess_lang(it)
@@ -265,7 +272,7 @@ def main():
             f"🌐 Format: {work_type_safe}" if work_type else None,
             f"📍 Manzil: {loc_safe}" if loc else None,
             f"🇺🇿 Til: {lang_safe}" if lang else None,
-            f"🔗 <a href=\"{url_safe}\">Murojaat qilish / Batafsil</a>" if url else None,
+           f"🔗 <a href=\"{url_safe}\">Murojaat qilish</a>" if url else None,
             f"🆔 ID: {vid}",
         ]
 
