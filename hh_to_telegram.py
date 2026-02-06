@@ -1,5 +1,7 @@
 import os, json
+import time
 import requests
+
 
 HH_BASE = "https://api.hh.ru"
 UA = (os.environ.get("HH_USER_AGENT", "UzJobsBot/1.0 (your_email@example.com)") or "")
@@ -21,12 +23,25 @@ def hh_get(path, params=None):
 
 def tg_send(text):
     url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-    r = requests.post(url, json={
-        "chat_id": TG_CHAT_ID,
-        "text": text,
-        "disable_web_page_preview": False
-    }, timeout=30)
-    r.raise_for_status()
+    for attempt in range(5):
+        r = requests.post(url, json={
+            "chat_id": TG_CHAT_ID,
+            "text": text,
+            "disable_web_page_preview": False
+        }, timeout=30)
+
+        if r.status_code == 429:
+            # Telegram odatda "retry_after" beradi
+            try:
+                retry_after = r.json().get("parameters", {}).get("retry_after", 5)
+            except Exception:
+                retry_after = 5
+            time.sleep(int(retry_after) + 1)
+            continue
+
+        r.raise_for_status()
+        return
+
 
 def load_state():
     if not os.path.exists(STATE_FILE):
@@ -93,8 +108,8 @@ def main():
             new_items.append(it)
 
     new_items.sort(key=lambda x: x.get("published_at") or x.get("created_at") or "")
-
-    for it in new_items:
+    MAX_POSTS = int(os.environ.get("MAX_POSTS", "10"))
+    for idx, it in enumerate(new_items[:MAX_POSTS], start=1):
         title = it.get("name", "Vakansiya")
         url = it.get("alternate_url") or it.get("url") or ""
         employer = (it.get("employer") or {}).get("name", "")
