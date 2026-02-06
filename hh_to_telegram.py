@@ -1,5 +1,10 @@
 import os, json, time, re
 import requests
+import hashlib
+
+LT_URL = (os.environ.get("LT_URL") or "").strip()      # masalan: https://libretranslate.de/translate
+LT_API_KEY = (os.environ.get("LT_API_KEY") or "").strip()
+
 
 HH_BASE = "https://api.hh.ru"
 
@@ -47,11 +52,11 @@ def tg_send(text: str):
 
 def load_state():
     if not os.path.exists(STATE_FILE):
-        return {"posted_ids": []}
+        return {"posted_ids": [], "tr_cache": {}}
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         s = json.load(f)
-    if "posted_ids" not in s:
-        s["posted_ids"] = []
+    s.setdefault("posted_ids", [])
+    s.setdefault("tr_cache", {})
     return s
 
 
@@ -66,6 +71,83 @@ def clean_html(s: str) -> str:
     s = re.sub(r"<[^>]+>", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
+
+TECH_WORDS = [
+    "PHP","Laravel","MySQL","PostgreSQL","SQL","NoSQL","Redis","MongoDB",
+    "JavaScript","TypeScript","React","Vue","Angular","Node.js","NodeJS",
+    "HTML","CSS","SASS","SCSS","Bootstrap","Tailwind","jQuery",
+    "Python","Django","Flask","FastAPI","Java","Spring","C#",".NET","ASP.NET",
+    "Go","Golang","Rust","C++","C","Kotlin","Swift",
+    "Docker","Kubernetes","Git","GitHub","GitLab","CI/CD","Linux","Nginx","Apache",
+    "REST","GraphQL","API","SOAP","Kafka","RabbitMQ","AWS","GCP","Azure"
+]
+
+def lt_translate_ru_to_uz(text: str, state: dict) -> str:
+    """LibreTranslate orqali RU->UZ. LT_URL bo'lmasa textni qaytaradi."""
+    if not text or not LT_URL:
+        return text
+
+    key = hashlib.md5(text.encode("utf-8")).hexdigest()
+    cached = state["tr_cache"].get(key)
+    if cached:
+        return cached
+
+    payload = {"q": text, "source": "ru", "target": "uz", "format": "text"}
+    if LT_API_KEY:
+        payload["api_key"] = LT_API_KEY
+
+    translated = text
+    try:
+        r = requests.post(LT_URL, json=payload, timeout=30)
+        if r.status_code == 429:
+            time.sleep(3)
+        r.raise_for_status()
+        translated = r.json().get("translatedText") or text
+    except Exception:
+        translated = text
+
+    # cache kattalashib ketmasin
+    if len(state["tr_cache"]) > 4000:
+        state["tr_cache"] = {}
+    state["tr_cache"][key] = translated
+    save_state(state)
+    return translated
+
+def mask_tokens(text: str):
+    """Tech/url/email/raqamlarni placeholderga almashtiradi."""
+    tokens = []
+
+    def put(m):
+        tokens.append(m.group(0))
+        return f"__TK{len(tokens)-1}__"
+
+    # URL
+    text = re.sub(r"https?://\S+", put, text)
+    # Email
+    text = re.sub(r"[\w\.-]+@[\w\.-]+\.\w+", put, text)
+    # Raqamlar (maosh, yil, foiz)
+    text = re.sub(r"\b\d+[.,]?\d*\b", put, text)
+
+    # Texnologiyalar (case-insensitive)
+    for w in sorted(TECH_WORDS, key=len, reverse=True):
+        pattern = r"(?i)\b" + re.escape(w) + r"\b"
+        text = re.sub(pattern, put, text)
+
+    return text, tokens
+
+def unmask_tokens(text: str, tokens):
+    for i, t in enumerate(tokens):
+        text = text.replace(f"__TK{i}__", t)
+    return text
+
+def smart_translate(text: str, state: dict) -> str:
+    """RU->UZ, lekin texnologiya/URL/raqamlarni saqlab qoladi."""
+    if not text:
+        return text
+    masked, tokens = mask_tokens(text)
+    tr = lt_translate_ru_to_uz(masked, state)
+    return unmask_tokens(tr, tokens)
+
 
 
 def extract_tech(item) -> str:
@@ -180,7 +262,12 @@ def main():
     sent_count = 0
     for it in fresh[:MAX_POSTS]:
         vid = it.get("id")
-        title = it.get("name", "Vakansiya")
+        title_raw = it.get("name", "Vakansiya")
+        title = smart_translate(title_raw, state)
+        
+        tech_raw = extract_tech(it)  # bu snippet.requirement (ruscha bo'lishi mumkin)
+        tech = smart_translate(tech_raw, state) if tech_raw else ""
+
         url = it.get("alternate_url") or it.get("url") or ""
 
         employer_obj = it.get("employer") or {}
