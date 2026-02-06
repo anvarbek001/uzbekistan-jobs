@@ -124,30 +124,32 @@ def main():
 
         loc = best_location(it)
 
-       experience = ""
-if it.get("experience"):
-    experience = it["experience"].get("name", "")
+ # Qo‘shimcha maydonlar
+experience = (it.get("experience") or {}).get("name", "")
+schedule = (it.get("schedule") or {}).get("name", "")
+employment = (it.get("employment") or {}).get("name", "")
 
-schedule = ""
-if it.get("schedule"):
-    schedule = it["schedule"].get("name", "")
+tech = ""
+snippet = it.get("snippet") or {}
+if snippet:
+    tech = snippet.get("requirement") or ""
 
-languages = ""
-if it.get("key_skills"):
-    skills = [s.get("name") for s in it["key_skills"] if s.get("name")]
-    technologies = ", ".join(skills)
-else:
-    technologies = ""
+salary = salary_text(it)
 
 lines = [
-    f"🏢 Kompaniya: {employer} ({(it.get('employer') or {}).get('alternate_url','')})" if employer else None,
-    f"💵 Maosh: {sal_txt}" if sal_txt else None,
+    f"💼 {title}",
+    f"🏢 Kompaniya: {employer}" if employer else None,
+    f"💵 Maosh: {salary}" if salary else "💵 Maosh: Kelishiladi",
     f"💼 Tajriba: {experience}" if experience else None,
-    f"🛠 Texnologiya: {technologies}" if technologies else None,
-    f"🌐 Format: {schedule}" if schedule else None,
-    f"🇺🇿 Til: #ru",
-    f"🔗 {url}" if url else None,
+    f"🛠 Texnologiya: {tech[:120]}" if tech else None,
+    f"🌐 Format: {schedule or employment}" if (schedule or employment) else None,
+    f"📍 Manzil: {loc}" if loc else None,
+    f"🔗 Batafsil: {url}" if url else None,
+    "#ish #vakansiya #uzbekiston",
 ]
+
+text = "\n".join([l for l in lines if l])
+
 
         tg_send("\n".join([l for l in lines if l]))
 
