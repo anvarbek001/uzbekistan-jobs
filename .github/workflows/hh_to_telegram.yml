@@ -2,7 +2,7 @@ name: HH Uzbekistan -> Telegram
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # har 10 daqiqa
+    - cron: "*/5 * * * *"   # har 10 daqiqa
   workflow_dispatch:
 
 permissions:
@@ -27,6 +27,7 @@ jobs:
           HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
           HH_HOST: "hh.uz"
           MAX_POSTS: "10"
+          SLEEP_BETWEEN_POSTS: "2"
         run: python hh_to_telegram.py
 
       - name: Commit state
