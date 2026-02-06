@@ -5,7 +5,6 @@ import hashlib
 LT_URL = (os.environ.get("LT_URL") or "").strip()      # masalan: https://libretranslate.de/translate
 LT_API_KEY = (os.environ.get("LT_API_KEY") or "").strip()
 
-
 HH_BASE = "https://api.hh.ru"
 
 UA = (os.environ.get("HH_USER_AGENT", "UzJobsBot/1.0 (your_email@example.com)") or "")
@@ -72,6 +71,7 @@ def clean_html(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+
 TECH_WORDS = [
     "PHP","Laravel","MySQL","PostgreSQL","SQL","NoSQL","Redis","MongoDB",
     "JavaScript","TypeScript","React","Vue","Angular","Node.js","NodeJS",
@@ -81,6 +81,7 @@ TECH_WORDS = [
     "Docker","Kubernetes","Git","GitHub","GitLab","CI/CD","Linux","Nginx","Apache",
     "REST","GraphQL","API","SOAP","Kafka","RabbitMQ","AWS","GCP","Azure"
 ]
+
 
 def lt_translate_ru_to_uz(text: str, state: dict) -> str:
     """LibreTranslate orqali RU->UZ. LT_URL bo'lmasa textni qaytaradi."""
@@ -106,48 +107,43 @@ def lt_translate_ru_to_uz(text: str, state: dict) -> str:
     except Exception:
         translated = text
 
-    # cache kattalashib ketmasin
     if len(state["tr_cache"]) > 4000:
         state["tr_cache"] = {}
     state["tr_cache"][key] = translated
     save_state(state)
     return translated
 
+
 def mask_tokens(text: str):
-    """Tech/url/email/raqamlarni placeholderga almashtiradi."""
     tokens = []
 
     def put(m):
         tokens.append(m.group(0))
         return f"__TK{len(tokens)-1}__"
 
-    # URL
-    text = re.sub(r"https?://\S+", put, text)
-    # Email
-    text = re.sub(r"[\w\.-]+@[\w\.-]+\.\w+", put, text)
-    # Raqamlar (maosh, yil, foiz)
-    text = re.sub(r"\b\d+[.,]?\d*\b", put, text)
+    text = re.sub(r"https?://\S+", put, text)                   # URL
+    text = re.sub(r"[\w\.-]+@[\w\.-]+\.\w+", put, text)         # Email
+    text = re.sub(r"\b\d+[.,]?\d*\b", put, text)                # Raqamlar
 
-    # Texnologiyalar (case-insensitive)
     for w in sorted(TECH_WORDS, key=len, reverse=True):
         pattern = r"(?i)\b" + re.escape(w) + r"\b"
         text = re.sub(pattern, put, text)
 
     return text, tokens
 
+
 def unmask_tokens(text: str, tokens):
     for i, t in enumerate(tokens):
         text = text.replace(f"__TK{i}__", t)
     return text
 
+
 def smart_translate(text: str, state: dict) -> str:
-    """RU->UZ, lekin texnologiya/URL/raqamlarni saqlab qoladi."""
     if not text:
         return text
     masked, tokens = mask_tokens(text)
     tr = lt_translate_ru_to_uz(masked, state)
     return unmask_tokens(tr, tokens)
-
 
 
 def extract_tech(item) -> str:
@@ -247,25 +243,21 @@ def main():
 
     items = data.get("items") or []
 
-    # yangi (yuborilmagan) vakansiyalar
     fresh = []
     for it in items:
         vid = it.get("id")
-        if not vid:
-            continue
-        if vid not in posted:
+        if vid and vid not in posted:
             fresh.append(it)
 
-    # eski->yangi tartibda yuboramiz
     fresh.sort(key=lambda x: x.get("published_at") or x.get("created_at") or "")
 
-    sent_count = 0
     for it in fresh[:MAX_POSTS]:
         vid = it.get("id")
+
         title_raw = it.get("name", "Vakansiya")
         title = smart_translate(title_raw, state)
-        
-        tech_raw = extract_tech(it)  # bu snippet.requirement (ruscha bo'lishi mumkin)
+
+        tech_raw = extract_tech(it)
         tech = smart_translate(tech_raw, state) if tech_raw else ""
 
         url = it.get("alternate_url") or it.get("url") or ""
@@ -287,7 +279,6 @@ def main():
         employment = (it.get("employment") or {}).get("name", "")
         work_type = " | ".join([p for p in [schedule, employment] if p])
 
-        tech = extract_tech(it)
         lang = guess_lang(it)
 
         lines = [
@@ -306,15 +297,10 @@ def main():
         tg_send(text)
 
         posted.add(vid)
-        sent_count += 1
         time.sleep(SLEEP_BETWEEN)
 
-    # posted_ids kattalashib ketmasin (oxirgilarini qoldiramiz)
     state["posted_ids"] = list(posted)[-5000:]
     save_state(state)
-
-    # Hech narsa topilmasa — xato qilmay chiqib ketadi
-    return
 
 
 if __name__ == "__main__":
