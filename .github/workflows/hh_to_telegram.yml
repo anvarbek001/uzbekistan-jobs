@@ -1,8 +1,7 @@
 name: HH Uzbekistan -> Telegram
-
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/2 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -14,38 +13,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
+      
       - run: pip install requests
-
+      
       - name: Restore state cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: state.json
           key: hh-state-${{ github.ref_name }}
           restore-keys: |
             hh-state-
-
+      
       - name: Run
         env:
-            TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-            TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-            HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
-            HH_HOST: "hh.uz"
-            MAX_POSTS: "10"
-            SLEEP_BETWEEN_POSTS: "2"
-            LT_URL: ${{ secrets.LT_URL }}
-            LT_API_KEY: ${{ secrets.LT_API_KEY }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          HH_USER_AGENT: ${{ secrets.HH_USER_AGENT }}
+          HH_HOST: "hh.uz"
+          MAX_POSTS: "10"
+          SLEEP_BETWEEN_POSTS: "2"
+          LT_URL: ${{ secrets.LT_URL }}
+          LT_API_KEY: ${{ secrets.LT_API_KEY }}
         run: python hh_to_telegram.py
-
+      
       - name: Save state cache
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
+        if: always()
         with:
           path: state.json
-          key: hh-state-${{ github.ref_name }}-${{ github.run_id }}
-          restore-keys: |
-            hh-state-${{ github.ref_name }}
-            hh-state-
+          key: hh-state-${{ github.ref_name }}-${{ github.run_number }}
