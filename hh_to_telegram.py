@@ -33,9 +33,9 @@ def fmt_salary(frm, to, cur):
     if frm is not None and to is not None:
         return f"{fmt_num(frm)}–{fmt_num(to)} {c}".strip()
     if frm is not None:
-        return f"{fmt_num(frm)}+ {c}".strip()
+        return f"from {fmt_num(frm)} {c}".strip()
     if to is not None:
-        return f"≤ {fmt_num(to)} {c}".strip()
+        return f"to {fmt_num(to)} {c}".strip()
     return ""
 
 
@@ -196,7 +196,7 @@ def find_uzbekistan_area_id():
 # ---------- MAIN ----------
 def main():
     if not UA:
-        raise RuntimeError("HH_USER_AGENT bo‘sh. Secrets’da HH_USER_AGENT ni to‘g‘ri qo‘ying.")
+        raise RuntimeError("HH_USER_AGENT bo'sh. Secrets'da HH_USER_AGENT ni to'g'ri qo'ying.")
 
     state = load_state()
     posted = set(state.get("posted_ids", []))
@@ -237,7 +237,8 @@ def main():
             company_line = f"{employer} ({employer_domain})"
 
         sal = salary_text(it)
-       experience_raw = (it.get("experience") or {}).get("name", "")
+        
+        experience_raw = (it.get("experience") or {}).get("name", "")
         schedule_raw = (it.get("schedule") or {}).get("name", "")
         employment_raw = (it.get("employment") or {}).get("name", "")
         
@@ -247,7 +248,6 @@ def main():
         employment = smart_translate(employment_raw, state) if employment_raw else ""
         
         work_type = " | ".join([p for p in [schedule, employment] if p])
-
 
         loc = best_location(it)
         lang = guess_lang(it)
@@ -272,7 +272,7 @@ def main():
             f"🌐 Format: {work_type_safe}" if work_type else None,
             f"📍 Manzil: {loc_safe}" if loc else None,
             f"🇺🇿 Til: {lang_safe}" if lang else None,
-           f"🔗 <a href=\"{url_safe}\">Murojaat qilish</a>" if url else None,
+            f"🔗 <a href=\"{url_safe}\">Murojaat qilish</a>" if url else None,
             f"🆔 ID: {vid}",
         ]
 
